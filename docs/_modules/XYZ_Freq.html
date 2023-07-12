@@ -1,0 +1,595 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>XYZ_Freq &#8212; ProjectName VersionNumber documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for XYZ_Freq</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Frequency calculation module</span>
+
+<span class="sd">This program can analyse vibration modes of molecule, visualize </span>
+<span class="sd">the normal mode coordinates, and calculate IR spectrum. </span>
+<span class="sd">Before executing this program, please prepare </span>
+<span class="sd">the chemical structure files in the current directory: </span>
+<span class="sd">&lt;jobname&gt;.xyz is necessary. </span>
+<span class="sd">If you want to visualize normal mode vectors, </span>
+<span class="sd">&lt;jobname&gt;.vesta is also required.</span>
+
+<span class="sd">Usage:</span>
+<span class="sd">    python XYZ_Freq.py</span>
+
+<span class="sd">    &gt;&gt;&gt; Enter the job name: &lt;jobname&gt;</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="kn">from</span> <span class="nn">pyscf</span> <span class="kn">import</span> <span class="n">gto</span><span class="p">,</span> <span class="n">scf</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pymatgen.core.periodic_table</span> <span class="k">as</span> <span class="nn">mg</span>
+<span class="kn">import</span> <span class="nn">pylab</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<div class="viewcode-block" id="Hessian"><a class="viewcode-back" href="../XYZ_Freq.html#XYZ_Freq.Hessian">[docs]</a><span class="k">class</span> <span class="nc">Hessian</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Hessian calculation class.</span>
+<span class="sd">    </span>
+<span class="sd">    Attributes:</span>
+<span class="sd">        coord (numpy.ndarray): An array of atom coordinates [Angstroms].</span>
+<span class="sd">        atmlist (list): A list of atoms (String).</span>
+
+<span class="sd">        These are created from &lt;jobname&gt;.xyz via xyzImp function.</span>
+<span class="sd">        When atmlist = [&quot;C&quot;, &quot;O&quot;], </span>
+<span class="sd">        coord = [C_x (x coordinate for C atom), C_y, C_z, O_x, O_y, O_z].</span>
+
+<span class="sd">        strc (String): A string defined with coord and atmlist.</span>
+
+<span class="sd">    Usage:</span>
+<span class="sd">        h = Hessian(coord, atmlist)</span>
+<span class="sd">        hessian = h.hessian()</span>
+
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+
+    <span class="c1">#initial var</span>
+    <span class="n">_d</span> <span class="o">=</span> <span class="mf">1.0e-5</span>
+
+    <span class="c1">#Define Functions</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coord</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">atmlist</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">coord</span> <span class="o">=</span> <span class="n">coord</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">coord</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">atmlist</span> <span class="o">=</span> <span class="n">atmlist</span>
+    
+        <span class="n">strc</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">atmlist</span><span class="p">)):</span>
+            <span class="n">strc</span> <span class="o">=</span> <span class="n">strc</span> <span class="o">+</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">atmlist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">coord</span><span class="p">[</span><span class="mi">3</span><span class="o">*</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">coord</span><span class="p">[</span><span class="mi">3</span><span class="o">*</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">coord</span><span class="p">[</span><span class="mi">3</span><span class="o">*</span><span class="n">i</span><span class="o">+</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s1">; &#39;</span>
+
+        <span class="k">if</span> <span class="n">strc</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;;&#39;</span><span class="p">:</span>
+            <span class="n">strc</span> <span class="o">=</span> <span class="n">strc</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">strc</span> <span class="o">=</span> <span class="n">strc</span>
+     
+<div class="viewcode-block" id="Hessian.energy"><a class="viewcode-back" href="../XYZ_Freq.html#XYZ_Freq.Hessian.energy">[docs]</a>    <span class="k">def</span> <span class="nf">energy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate SCF energy [Hartree].</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            float: the SCF energy of the molecule</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">mol</span> <span class="o">=</span> <span class="n">gto</span><span class="o">.</span><span class="n">M</span><span class="p">(</span><span class="n">atom</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">strc</span><span class="p">,</span> <span class="n">basis</span><span class="o">=</span><span class="s1">&#39;cc-pvdz&#39;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">mf</span> <span class="o">=</span> <span class="n">scf</span><span class="o">.</span><span class="n">RHF</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
+        <span class="n">ene</span> <span class="o">=</span> <span class="n">mf</span><span class="o">.</span><span class="n">kernel</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">ene</span></div>
+
+<div class="viewcode-block" id="Hessian.forceCalc"><a class="viewcode-back" href="../XYZ_Freq.html#XYZ_Freq.Hessian.forceCalc">[docs]</a>    <span class="k">def</span> <span class="nf">forceCalc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Numerical derivative of Energy with nth coordinate. (dE/dx_n)</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            n (Int): the suffix of derivative variable</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            float: the derivative of molecule&#39;s energy</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">coord</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coord</span>
+        <span class="n">atmlist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">atmlist</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span>
+        <span class="n">diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">diff</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_d</span>
+        <span class="n">__large</span> <span class="o">=</span> <span class="n">Hessian</span><span class="p">(</span><span class="n">coord</span> <span class="o">+</span> <span class="n">diff</span><span class="p">,</span> <span class="n">atmlist</span><span class="p">)</span>
+        <span class="n">__small</span> <span class="o">=</span> <span class="n">Hessian</span><span class="p">(</span><span class="n">coord</span> <span class="o">-</span> <span class="n">diff</span><span class="p">,</span> <span class="n">atmlist</span><span class="p">)</span>
+        <span class="n">force</span> <span class="o">=</span> <span class="p">(</span><span class="n">__large</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span><span class="o">-</span><span class="n">__small</span><span class="o">.</span><span class="n">energy</span><span class="p">())</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_d</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">force</span></div>
+    
+<div class="viewcode-block" id="Hessian.secDrv"><a class="viewcode-back" href="../XYZ_Freq.html#XYZ_Freq.Hessian.secDrv">[docs]</a>    <span class="k">def</span> <span class="nf">secDrv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Second derivative of Energy with n,mth coordinates. (d^2 E/dx_n dx_m)</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            n, m (Int): the suffix of derivative variables</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            float: the second derivative of molecule&#39;s energy</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">coord</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coord</span>
+        <span class="n">atmlist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">atmlist</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span>
+        <span class="n">diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">diff</span><span class="p">[</span><span class="n">m</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_d</span>
+        <span class="n">__large</span> <span class="o">=</span> <span class="n">Hessian</span><span class="p">(</span><span class="n">coord</span> <span class="o">+</span> <span class="n">diff</span><span class="p">,</span> <span class="n">atmlist</span><span class="p">)</span>
+        <span class="n">__small</span> <span class="o">=</span> <span class="n">Hessian</span><span class="p">(</span><span class="n">coord</span> <span class="o">-</span> <span class="n">diff</span><span class="p">,</span> <span class="n">atmlist</span><span class="p">)</span>
+        <span class="n">secDeriv</span> <span class="o">=</span> <span class="p">(</span><span class="n">__large</span><span class="o">.</span><span class="n">forceCalc</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="o">-</span><span class="n">__small</span><span class="o">.</span><span class="n">forceCalc</span><span class="p">(</span><span class="n">n</span><span class="p">))</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_d</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">secDeriv</span></div>
+    
+<div class="viewcode-block" id="Hessian.hessian"><a class="viewcode-back" href="../XYZ_Freq.html#XYZ_Freq.Hessian.hessian">[docs]</a>    <span class="k">def</span> <span class="nf">hessian</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate Hessian</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.matrix: the Hessian of the matrix</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">coord</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coord</span>
+        <span class="n">hess</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="n">hess</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">secDrv</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
+                <span class="n">hess</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">hess</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">hess</span></div></div>
+
+
+<div class="viewcode-block" id="Harmonic"><a class="viewcode-back" href="../XYZ_Freq.html#XYZ_Freq.Harmonic">[docs]</a><span class="k">class</span> <span class="nc">Harmonic</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Frequency analysis class.</span>
+<span class="sd">    </span>
+<span class="sd">    Attributes:</span>
+<span class="sd">        hess (numpy): Hessian, generated via Hessian.hessian()</span>
+<span class="sd">        atmlist (list): A list of atoms (String), the same as Hessian.</span>
+
+<span class="sd">        eig (list): Eigenvalues and eigenvectors of mass-weighted Hessian, </span>
+<span class="sd">                    calculated via Harmonic.frequencies() function.</span>
+
+<span class="sd">    Usage:</span>
+<span class="sd">        harmo = Harmonic(hess, atmlist)</span>
+<span class="sd">        print(harmo)</span>
+<span class="sd">        frequencies = harmo.eig[0]</span>
+<span class="sd">        normalModeVectors = harmo.eig[1]</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1">#constants</span>
+    <span class="n">_amu</span> <span class="o">=</span> <span class="mf">1.66e-27</span> <span class="c1">#amu -&gt; kg</span>
+    <span class="n">_hart</span> <span class="o">=</span> <span class="mf">4.36e-18</span> <span class="c1">#Hartree -&gt; J</span>
+    <span class="n">_pi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+    <span class="n">_c</span> <span class="o">=</span> <span class="mf">3.0e+10</span> <span class="c1">#cm/s</span>
+    <span class="n">_angs</span> <span class="o">=</span> <span class="mf">1e-10</span> <span class="c1">#Angstrom -&gt; Meter</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hess</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">,</span> <span class="n">atmlist</span><span class="p">:</span><span class="nb">list</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hess</span> <span class="o">=</span> <span class="n">hess</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">atmlist</span> <span class="o">=</span> <span class="n">atmlist</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">atmlist</span><span class="p">)</span> <span class="o">*</span> <span class="mi">3</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequencies</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Harmonic.massWeighted"><a class="viewcode-back" href="../XYZ_Freq.html#XYZ_Freq.Harmonic.massWeighted">[docs]</a>    <span class="k">def</span> <span class="nf">massWeighted</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert cartesan-based Hessian to Mass-Weighted Hessian.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.matrix: mass-weighted Hessian</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">mass</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">):</span>
+            <span class="n">atm</span> <span class="o">=</span> <span class="n">mg</span><span class="o">.</span><span class="n">Element</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">atmlist</span><span class="p">[</span><span class="n">i</span><span class="o">//</span><span class="mi">3</span><span class="p">])</span>
+            <span class="n">atmMass</span> <span class="o">=</span> <span class="n">atm</span><span class="o">.</span><span class="n">atomic_mass</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_amu</span>
+            <span class="n">mass</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">atmMass</span><span class="p">)</span>
+
+        <span class="n">hess</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hess</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hart</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_angs</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">mwHess</span> <span class="o">=</span> <span class="n">hess</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="n">mwHess</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">hess</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">/</span> <span class="p">((</span><span class="n">mass</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">mass</span><span class="p">[</span><span class="n">j</span><span class="p">])</span><span class="o">**</span><span class="mf">0.5</span><span class="p">)</span>
+                <span class="n">mwHess</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">mwHess</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">mwHess</span></div>
+
+<div class="viewcode-block" id="Harmonic.frequencies"><a class="viewcode-back" href="../XYZ_Freq.html#XYZ_Freq.Harmonic.frequencies">[docs]</a>    <span class="k">def</span> <span class="nf">frequencies</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate eigenvalues and eigenvectors for mass-weighted Hessian.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            list: Eigenvalues and eigenvectors of mass-weighted Hessian</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+        <span class="n">eig</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eig</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">massWeighted</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">eig</span></div>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="s2">&quot;Freq. Calculation Processing ...</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">freq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">eig</span>
+        <span class="n">nmode</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">freq</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nmode</span><span class="p">):</span>
+            <span class="n">omega2</span> <span class="o">=</span> <span class="n">freq</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">norMode</span> <span class="o">=</span> <span class="n">freq</span><span class="p">[</span><span class="mi">1</span><span class="p">][:,</span> <span class="n">i</span><span class="p">]</span>
+
+            <span class="n">notion</span> <span class="o">=</span> <span class="s2">&quot;*******************************&quot;</span>
+            <span class="k">if</span> <span class="n">omega2</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">notion</span> <span class="o">=</span> <span class="s2">&quot;*Warning: Imaginary Frequency!*&quot;</span>
+
+            <span class="n">frequency</span> <span class="o">=</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">omega2</span><span class="p">)</span><span class="o">**</span><span class="mf">0.5</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_pi</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_c</span><span class="p">)</span> 
+
+            <span class="n">output</span> <span class="o">=</span> <span class="n">output</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">MODE #</span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">notion</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">output</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;|Frequency| [cm**-1] = </span><span class="si">{</span><span class="n">frequency</span><span class="si">:</span><span class="s2"> 7.4f</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">output</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;Normal Mode Coordinates [mwc]</span><span class="se">\n</span><span class="s2">&quot;</span>
+
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">atmlist</span><span class="p">)):</span>
+                <span class="n">output</span> <span class="o">=</span> <span class="n">output</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">atmlist</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">norMode</span><span class="p">[</span><span class="mi">3</span><span class="o">*</span><span class="n">i</span><span class="p">]</span><span class="si">:</span><span class="s2"> 7.4f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">norMode</span><span class="p">[</span><span class="mi">3</span><span class="o">*</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2"> 7.4f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">norMode</span><span class="p">[</span><span class="mi">3</span><span class="o">*</span><span class="n">i</span><span class="o">+</span><span class="mi">2</span><span class="p">]</span><span class="si">:</span><span class="s2"> 7.4f</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+
+            <span class="n">output</span> <span class="o">=</span> <span class="n">output</span> <span class="o">+</span> <span class="s2">&quot;****************************************</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+                       
+        <span class="n">output</span> <span class="o">=</span> <span class="n">output</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;Freq. Calculation successfully terminated.</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">output</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;****************************************</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">output</span></div>
+
+
+<div class="viewcode-block" id="IR"><a class="viewcode-back" href="../XYZ_Freq.html#XYZ_Freq.IR">[docs]</a><span class="k">class</span> <span class="nc">IR</span><span class="p">(</span><span class="n">Hessian</span><span class="p">,</span> <span class="n">Harmonic</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;IR intensity calculation class.</span>
+<span class="sd">    </span>
+<span class="sd">    Attributes:</span>
+<span class="sd">        eig (list): Eigenvalues and eigenvectors of mass-weighted Hessian, </span>
+<span class="sd">                    calculated via Harmonic.frequencies() function.</span>
+<span class="sd">        coord (numpy.ndarray): An array of atom coordinates.</span>
+<span class="sd">        atmlist (list): A list of atoms (String), the same as Hessian.</span>
+<span class="sd">        intensity (numpy.ndarray): An array of IR intensity,</span>
+<span class="sd">                  calculated via IR.xyzIntensity() or IR.normodeIntensity()</span>
+
+<span class="sd">    Usage:</span>
+<span class="sd">        ir = IR(eig, coord, atmlist)</span>
+<span class="sd">        intensity = ir.xyzIntensity()</span>
+<span class="sd">        print(ir)</span>
+
+<span class="sd">    Note:</span>
+<span class="sd">        Execute IR.xyzIntensity() or IR.normodeIntensity() before print(IR)!</span>
+
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">eig</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">coord</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">atmlist</span><span class="p">:</span><span class="nb">list</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">freq</span> <span class="o">=</span> <span class="n">eig</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frequencies</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">**</span><span class="mf">0.5</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">Harmonic</span><span class="o">.</span><span class="n">_pi</span><span class="o">*</span><span class="n">Harmonic</span><span class="o">.</span><span class="n">_c</span><span class="p">)</span>
+        <span class="n">Hessian</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coord</span><span class="p">,</span> <span class="n">atmlist</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">atmlist</span><span class="p">)</span><span class="o">*</span><span class="mi">3</span>
+
+<div class="viewcode-block" id="IR.dipoleMoment"><a class="viewcode-back" href="../XYZ_Freq.html#XYZ_Freq.IR.dipoleMoment">[docs]</a>    <span class="k">def</span> <span class="nf">dipoleMoment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate Dipole Moment</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray: dipolemoment [x, y, z]</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">mol</span> <span class="o">=</span> <span class="n">gto</span><span class="o">.</span><span class="n">M</span><span class="p">(</span><span class="n">atom</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">strc</span><span class="p">,</span> <span class="n">basis</span><span class="o">=</span><span class="s1">&#39;cc-pvdz&#39;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">mf</span> <span class="o">=</span> <span class="n">scf</span><span class="o">.</span><span class="n">RHF</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
+        <span class="n">mf</span><span class="o">.</span><span class="n">kernel</span><span class="p">()</span>
+        <span class="n">dipole</span> <span class="o">=</span> <span class="n">mf</span><span class="o">.</span><span class="n">dip_moment</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">dipole</span></div>
+
+<div class="viewcode-block" id="IR.xyzIntensity"><a class="viewcode-back" href="../XYZ_Freq.html#XYZ_Freq.IR.xyzIntensity">[docs]</a>    <span class="k">def</span> <span class="nf">xyzIntensity</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate IR intensity of each modes,</span>
+<span class="sd">           with unitary transformation of xyz derivative of dipole moment.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray: an array of IR intensity of each modes. </span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">coord</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coord</span>
+        <span class="n">atmlist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">atmlist</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span>
+        <span class="n">xyzIntensity</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">dim</span><span class="p">):</span>
+            <span class="n">diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="n">diff</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_d</span>
+            <span class="n">__large</span> <span class="o">=</span> <span class="n">IR</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span> <span class="n">coord</span> <span class="o">+</span> <span class="n">diff</span><span class="p">,</span> <span class="n">atmlist</span><span class="p">)</span>
+            <span class="n">__small</span> <span class="o">=</span> <span class="n">IR</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span> <span class="n">coord</span> <span class="o">-</span> <span class="n">diff</span><span class="p">,</span> <span class="n">atmlist</span><span class="p">)</span>
+            <span class="n">grad</span> <span class="o">=</span> <span class="p">(</span><span class="n">__large</span><span class="o">.</span><span class="n">dipoleMoment</span><span class="p">()</span><span class="o">-</span><span class="n">__small</span><span class="o">.</span><span class="n">dipoleMoment</span><span class="p">())</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_d</span><span class="p">)</span>
+            <span class="n">peak</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">grad</span><span class="p">,</span> <span class="nb">ord</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+            <span class="n">xyzIntensity</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">peak</span><span class="p">)</span>
+        <span class="n">xyzIntensity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">xyzIntensity</span><span class="p">)</span>
+        <span class="n">unitary</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">invUni</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">unitary</span><span class="p">)</span>
+        <span class="n">transformedIntensity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">unitary</span><span class="p">,</span> <span class="n">xyzIntensity</span><span class="p">))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frequencies</span><span class="p">)</span> 
+        <span class="c1">#transformedIntensity = np.abs(np.dot(invUni, np.dot(xyzIntensity,unitary))) / np.abs(self.frequencies) </span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">intensity</span> <span class="o">=</span> <span class="n">transformedIntensity</span>
+        <span class="k">return</span> <span class="n">transformedIntensity</span></div>
+
+<div class="viewcode-block" id="IR.normodeIntensity"><a class="viewcode-back" href="../XYZ_Freq.html#XYZ_Freq.IR.normodeIntensity">[docs]</a>    <span class="k">def</span> <span class="nf">normodeIntensity</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate IR intensity of each modes,</span>
+<span class="sd">           with derivative of dipole moment with normal mode coordinate.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            numpy.ndarray: an array of IR intensity of each modes. </span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">coord</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coord</span>
+        <span class="n">atmlist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">atmlist</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span>
+
+        <span class="n">intensity</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">[</span><span class="mi">0</span><span class="p">])):</span>
+            <span class="n">frequency</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequencies</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+    
+            <span class="n">normodes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">nmode</span> <span class="o">=</span> <span class="n">normodes</span><span class="p">[:,</span> <span class="n">n</span><span class="p">]</span>
+            <span class="n">diff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_d</span><span class="o">*</span><span class="n">nmode</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">nmode</span><span class="p">)</span>
+            <span class="n">__large</span> <span class="o">=</span> <span class="n">IR</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span> <span class="n">coord</span> <span class="o">+</span> <span class="n">diff</span><span class="p">,</span> <span class="n">atmlist</span><span class="p">)</span>
+            <span class="n">__small</span> <span class="o">=</span> <span class="n">IR</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span> <span class="n">coord</span> <span class="o">-</span> <span class="n">diff</span><span class="p">,</span> <span class="n">atmlist</span><span class="p">)</span>
+            <span class="n">grad</span> <span class="o">=</span> <span class="p">(</span><span class="n">__large</span><span class="o">.</span><span class="n">dipoleMoment</span><span class="p">()</span><span class="o">-</span><span class="n">__small</span><span class="o">.</span><span class="n">dipoleMoment</span><span class="p">())</span><span class="o">/</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_d</span><span class="p">)</span>
+            <span class="n">peak</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">grad</span><span class="p">,</span> <span class="nb">ord</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="nb">abs</span><span class="p">(</span><span class="n">frequency</span><span class="p">)</span>
+            <span class="n">intensity</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">peak</span><span class="p">)</span>
+        <span class="n">intensity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">intensity</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">intensity</span> <span class="o">=</span> <span class="n">intensity</span>
+        <span class="k">return</span> <span class="n">intensity</span></div>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">intensities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">intensity</span>
+        <span class="n">frequencies</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frequencies</span> 
+        <span class="n">output</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">IR Spectrums</span><span class="se">\n</span><span class="s2">#mode Frequency[cm**-1]  IR intensity</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">for</span> <span class="n">mode</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">frequencies</span><span class="p">)):</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">output</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">mode</span><span class="o">+</span><span class="mi">1</span><span class="si">:</span><span class="s2"> &gt;5d</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">frequencies</span><span class="p">[</span><span class="n">mode</span><span class="p">]</span><span class="si">:</span><span class="s2"> 17.8f</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">intensities</span><span class="p">[</span><span class="n">mode</span><span class="p">]</span><span class="si">:</span><span class="s2"> 12.6f</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">output</span></div>
+
+
+<div class="viewcode-block" id="Plot"><a class="viewcode-back" href="../XYZ_Freq.html#XYZ_Freq.Plot">[docs]</a><span class="k">class</span> <span class="nc">Plot</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot and Visualization class.</span>
+
+<span class="sd">    Attributes: </span>
+<span class="sd">        eig (list): Eigenvalues and eigenvectors of mass-weighted Hessian, </span>
+<span class="sd">                    calculated via Harmonic.frequencies() function.</span>
+<span class="sd">        job (String): the name of molecule you want to calculate.</span>
+<span class="sd">        intensity (numpy.ndarray): An array of IR intensity,</span>
+<span class="sd">                  calculated via IR.xyzIntensity() or IR.normodeIntensity()</span>
+<span class="sd">        atmlist (list): A list of atoms (String), the same as Hessian.</span>
+
+<span class="sd">    Usage:</span>
+<span class="sd">        Plot(eig, job, intensity, atmlist)</span>
+<span class="sd">        Then IR spectrum graph</span>
+<span class="sd">         and VESTA files for each normal mode vector</span>
+<span class="sd">         which visualize them on the molecule are generated. </span>
+<span class="sd">  </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_c</span> <span class="o">=</span> <span class="mf">3.0e+10</span> <span class="c1">#cm/s</span>
+    <span class="n">_pi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">eig</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">job</span><span class="p">:</span><span class="nb">str</span><span class="p">,</span> <span class="n">intensity</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">atmlist</span><span class="p">:</span><span class="nb">list</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">freq</span> <span class="o">=</span> <span class="n">eig</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">job</span> <span class="o">=</span> <span class="n">job</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">natm</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">atmlist</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">intensity</span> <span class="o">=</span> <span class="n">intensity</span> 
+        <span class="bp">self</span><span class="o">.</span><span class="n">vecviz</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">irSpectrum</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Plot.vecviz"><a class="viewcode-back" href="../XYZ_Freq.html#XYZ_Freq.Plot.vecviz">[docs]</a>    <span class="k">def</span> <span class="nf">vecviz</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scale</span><span class="p">:</span><span class="nb">float</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Visualize the Normal Mode Vectors on VESTA file.</span>
+
+<span class="sd">        It generates &lt;jobname&gt;_vector_mode&lt;number&gt;.vesta file</span>
+<span class="sd">        for each oscillation mode.</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            scale (float): The length scale of the vectors</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">normodes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            
+            <span class="k">for</span> <span class="n">mode</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">normodes</span><span class="p">)):</span>
+                <span class="n">nmode</span> <span class="o">=</span> <span class="n">normodes</span><span class="p">[:,</span> <span class="n">mode</span><span class="p">]</span>
+                <span class="n">vectr</span> <span class="o">=</span> <span class="s2">&quot;VECTR</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="n">vectt</span> <span class="o">=</span> <span class="s2">&quot;VECTT</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="k">for</span> <span class="n">atm</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">natm</span><span class="p">):</span>
+                    <span class="n">vectr</span> <span class="o">=</span> <span class="n">vectr</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;   </span><span class="si">{</span><span class="n">atm</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">    </span><span class="si">{</span><span class="n">nmode</span><span class="p">[</span><span class="mi">3</span><span class="o">*</span><span class="n">atm</span><span class="p">]</span><span class="o">*</span><span class="n">scale</span><span class="si">}</span><span class="s2">    </span><span class="si">{</span><span class="n">nmode</span><span class="p">[</span><span class="mi">3</span><span class="o">*</span><span class="n">atm</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">scale</span><span class="si">}</span><span class="s2">    </span><span class="si">{</span><span class="n">nmode</span><span class="p">[</span><span class="mi">3</span><span class="o">*</span><span class="n">atm</span><span class="o">+</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="n">scale</span><span class="si">}</span><span class="s2"> 0</span><span class="se">\n</span><span class="s2">&quot;</span>
+                    <span class="n">vectr</span> <span class="o">=</span> <span class="n">vectr</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;    </span><span class="si">{</span><span class="n">atm</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">   0    0    0    0</span><span class="se">\n</span><span class="s2">&quot;</span>
+                    <span class="n">vectr</span> <span class="o">=</span> <span class="n">vectr</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; 0 0 0 0 0</span><span class="se">\n</span><span class="s2">&quot;</span>
+
+                    <span class="n">vectt</span> <span class="o">=</span> <span class="n">vectt</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;   </span><span class="si">{</span><span class="n">atm</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">  0.300 255   0   0 2</span><span class="se">\n</span><span class="s2">&quot;</span>
+                
+                <span class="n">vectr</span> <span class="o">=</span> <span class="n">vectr</span> <span class="o">+</span> <span class="s2">&quot; 0 0 0 0 0</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="n">vectt</span> <span class="o">=</span> <span class="n">vectt</span> <span class="o">+</span> <span class="s2">&quot; 0 0 0 0 0</span><span class="se">\n</span><span class="s2">&quot;</span>
+        
+                <span class="n">replace</span> <span class="o">=</span> <span class="n">vectr</span> <span class="o">+</span> <span class="n">vectt</span>
+                <span class="n">original</span> <span class="o">=</span> <span class="s2">&quot;VECTR</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="n">original</span> <span class="o">=</span> <span class="n">original</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; 0 0 0 0 0</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="n">original</span> <span class="o">=</span> <span class="n">original</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;VECTT</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="n">original</span> <span class="o">=</span> <span class="n">original</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot; 0 0 0 0 0</span><span class="se">\n</span><span class="s2">&quot;</span>
+    
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="o">+</span><span class="s1">&#39;.vesta&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">data_lines</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+                <span class="n">data_lines</span> <span class="o">=</span> <span class="n">data_lines</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">original</span><span class="p">,</span> <span class="n">replace</span><span class="p">)</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="o">+</span><span class="s1">&#39;_vector_mode&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">mode</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;.vesta&#39;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data_lines</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;There&#39;s no &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">job</span> <span class="o">+</span><span class="s2">&quot;.vesta file. Please check the file name.&quot;</span><span class="p">)</span>
+            <span class="k">return</span></div>
+
+<div class="viewcode-block" id="Plot.irSpectrum"><a class="viewcode-back" href="../XYZ_Freq.html#XYZ_Freq.Plot.irSpectrum">[docs]</a>    <span class="k">def</span> <span class="nf">irSpectrum</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a IR spectrum plot in a png file.</span>
+
+<span class="sd">        It generates &lt;jobname&gt;_IR.png file.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">frequencies</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">**</span><span class="mf">0.5</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_pi</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">_c</span><span class="p">)</span>
+        <span class="n">normodes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">intensity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">intensity</span>
+        
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">500</span><span class="p">,</span> <span class="mi">4000</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="mi">5</span> <span class="c1">#HWHM parameter</span>
+        <span class="k">for</span> <span class="n">mode</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">frequencies</span><span class="p">)):</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">y</span> <span class="o">+</span> <span class="p">((</span><span class="mi">1</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">_pi</span><span class="p">)</span> <span class="o">*</span> <span class="n">intensity</span><span class="p">[</span><span class="n">mode</span><span class="p">]</span> <span class="o">*</span> <span class="n">w</span> <span class="o">/</span> <span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="n">frequencies</span><span class="p">[</span><span class="n">mode</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">w</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+
+        <span class="n">y</span> <span class="o">=</span> <span class="mf">1.2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">-</span> <span class="n">y</span>
+        <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Frequencies [cm**-1]&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Intensity&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">job</span><span class="si">}</span><span class="s2">_IR.png&quot;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div></div>
+    
+
+<div class="viewcode-block" id="xyzInp"><a class="viewcode-back" href="../XYZ_Freq.html#XYZ_Freq.xyzInp">[docs]</a><span class="k">def</span> <span class="nf">xyzInp</span><span class="p">(</span><span class="n">job</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Import &lt;jobname&gt;.xyz file.</span>
+
+<span class="sd">    It reads &lt;jobname&gt;.xyz file and store its information</span>
+<span class="sd">    in coord and atmlist.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        job (String): jobname, the name of molecule you calculate.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list: atmlist, A list of atoms (String).</span>
+<span class="sd">        numpy.ndarray: coord, An array of atom coordinates [Angstroms].</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">atmlist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">inpCoord</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">job</span><span class="o">+</span><span class="s1">&#39;.xyz&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span>
+        <span class="n">datalist</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">datalist</span><span class="p">:</span>
+            <span class="n">row</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">4</span> <span class="p">:</span>
+                <span class="k">continue</span>
+        
+            <span class="n">atm</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">xyz</span> <span class="o">=</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">row</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">row</span><span class="p">[</span><span class="mi">3</span><span class="p">]]</span>
+            <span class="n">atmlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">atm</span><span class="p">))</span>
+            <span class="n">inpCoord</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">xyz</span><span class="p">)</span>
+        
+        <span class="n">coord</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">inpCoord</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">atmlist</span><span class="p">,</span> <span class="n">coord</span>
+    
+    <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;There&#39;s no &quot;</span> <span class="o">+</span> <span class="n">job</span> <span class="o">+</span><span class="s2">&quot;.xyz file. Please check the file name.&quot;</span><span class="p">)</span>
+        <span class="n">exit</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../XYZ_Freq.html#XYZ_Freq.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">job</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;Enter the job name: &quot;</span><span class="p">)</span>
+    <span class="n">inp</span> <span class="o">=</span> <span class="n">xyzInp</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
+    <span class="n">atmlist</span> <span class="o">=</span> <span class="n">inp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">coord</span> <span class="o">=</span> <span class="n">inp</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Hessian Calculation Processing ...&quot;</span><span class="p">)</span>
+    <span class="n">hess</span> <span class="o">=</span> <span class="n">Hessian</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="n">atmlist</span><span class="p">)</span><span class="o">.</span><span class="n">hessian</span><span class="p">()</span>
+    <span class="n">harmo</span> <span class="o">=</span> <span class="n">Harmonic</span><span class="p">(</span><span class="n">hess</span><span class="p">,</span> <span class="n">atmlist</span><span class="p">)</span>
+    <span class="n">eig</span> <span class="o">=</span> <span class="n">harmo</span><span class="o">.</span><span class="n">eig</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">harmo</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Dipole Moment Calculation Processing ...&quot;</span><span class="p">)</span>
+    <span class="n">ir</span> <span class="o">=</span> <span class="n">IR</span><span class="p">(</span><span class="n">eig</span><span class="p">,</span> <span class="n">coord</span><span class="p">,</span> <span class="n">atmlist</span><span class="p">)</span>
+    <span class="n">intensity</span> <span class="o">=</span> <span class="n">ir</span><span class="o">.</span><span class="n">xyzIntensity</span><span class="p">()</span>
+<span class="c1">#    intensity = ir.normodeIntensity()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">ir</span><span class="p">)</span>
+    <span class="n">Plot</span><span class="p">(</span><span class="n">eig</span><span class="p">,</span> <span class="n">job</span><span class="p">,</span> <span class="n">intensity</span><span class="p">,</span> <span class="n">atmlist</span><span class="p">)</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+
+
+
+
+
+
+
+
+
+
+
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">ProjectName</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../XYZ_Freq.html">XYZ_Freq module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, AuthorName.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 6.2.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

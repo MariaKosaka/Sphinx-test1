@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="ja" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XYZ_Freq module &mdash; Sphinx Study 1 ドキュメント</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+        <script src="_static/translations.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="genindex.html" />
+    <link rel="search" title="検索" href="search.html" />
+    <link rel="prev" title="振動解析プログラム" href="chapter2.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Sphinx Study
+              <img src="_static/LOGO1.PNG" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="chapter1.html">Sphinx メモ</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="chapter2.html">振動解析プログラム</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="chapter2.html#id2">ソースコード</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">XYZ_Freq module</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#XYZ_Freq.Harmonic"><code class="docutils literal notranslate"><span class="pre">Harmonic</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#XYZ_Freq.Hessian"><code class="docutils literal notranslate"><span class="pre">Hessian</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#XYZ_Freq.IR"><code class="docutils literal notranslate"><span class="pre">IR</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#XYZ_Freq.Plot"><code class="docutils literal notranslate"><span class="pre">Plot</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#XYZ_Freq.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#XYZ_Freq.xyzInp"><code class="docutils literal notranslate"><span class="pre">xyzInp()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="chapter2.html#id3">実行結果例</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Sphinx Study</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="chapter2.html">振動解析プログラム</a></li>
+      <li class="breadcrumb-item active">XYZ_Freq module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/XYZ_Freq.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-XYZ_Freq">
+<span id="xyz-freq-module"></span><h1>XYZ_Freq module<a class="headerlink" href="#module-XYZ_Freq" title="この見出しへのパーマリンク">¶</a></h1>
+<p>Frequency calculation module</p>
+<p>This program can analyse vibration modes of molecule, visualize
+the normal mode coordinates, and calculate IR spectrum.
+Before executing this program, please prepare
+the chemical structure files in the current directory:
+&lt;jobname&gt;.xyz is necessary.
+If you want to visualize normal mode vectors,
+&lt;jobname&gt;.vesta is also required.</p>
+<dl>
+<dt>Usage:</dt><dd><p>python XYZ_Freq.py</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Enter</span> <span class="n">the</span> <span class="n">job</span> <span class="n">name</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">jobname</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="XYZ_Freq.Harmonic">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">XYZ_Freq.</span></span><span class="sig-name descname"><span class="pre">Harmonic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hess</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">matrix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atmlist</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/XYZ_Freq.html#Harmonic"><span class="viewcode-link"><span class="pre">[ソース]</span></span></a><a class="headerlink" href="#XYZ_Freq.Harmonic" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>ベースクラス: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Frequency analysis class.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="XYZ_Freq.Harmonic.hess">
+<span class="sig-name descname"><span class="pre">hess</span></span><a class="headerlink" href="#XYZ_Freq.Harmonic.hess" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>Hessian, generated via Hessian.hessian()</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="XYZ_Freq.Harmonic.atmlist">
+<span class="sig-name descname"><span class="pre">atmlist</span></span><a class="headerlink" href="#XYZ_Freq.Harmonic.atmlist" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>A list of atoms (String), the same as Hessian.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="XYZ_Freq.Harmonic.eig">
+<span class="sig-name descname"><span class="pre">eig</span></span><a class="headerlink" href="#XYZ_Freq.Harmonic.eig" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>Eigenvalues and eigenvectors of mass-weighted Hessian,
+calculated via Harmonic.frequencies() function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="simple">
+<dt>Usage:</dt><dd><p>harmo = Harmonic(hess, atmlist)
+print(harmo)
+frequencies = harmo.eig[0]
+normalModeVectors = harmo.eig[1]</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="XYZ_Freq.Harmonic.frequencies">
+<span class="sig-name descname"><span class="pre">frequencies</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/XYZ_Freq.html#Harmonic.frequencies"><span class="viewcode-link"><span class="pre">[ソース]</span></span></a><a class="headerlink" href="#XYZ_Freq.Harmonic.frequencies" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>Calculate eigenvalues and eigenvectors for mass-weighted Hessian.</p>
+<dl class="field-list simple">
+<dt class="field-odd">戻り値<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Eigenvalues and eigenvectors of mass-weighted Hessian</p>
+</dd>
+<dt class="field-even">戻り値の型<span class="colon">:</span></dt>
+<dd class="field-even"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="XYZ_Freq.Harmonic.massWeighted">
+<span class="sig-name descname"><span class="pre">massWeighted</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">matrix</span></span></span><a class="reference internal" href="_modules/XYZ_Freq.html#Harmonic.massWeighted"><span class="viewcode-link"><span class="pre">[ソース]</span></span></a><a class="headerlink" href="#XYZ_Freq.Harmonic.massWeighted" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>Convert cartesan-based Hessian to Mass-Weighted Hessian.</p>
+<dl class="field-list simple">
+<dt class="field-odd">戻り値<span class="colon">:</span></dt>
+<dd class="field-odd"><p>mass-weighted Hessian</p>
+</dd>
+<dt class="field-even">戻り値の型<span class="colon">:</span></dt>
+<dd class="field-even"><p>numpy.matrix</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="XYZ_Freq.Hessian">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">XYZ_Freq.</span></span><span class="sig-name descname"><span class="pre">Hessian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coord</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atmlist</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/XYZ_Freq.html#Hessian"><span class="viewcode-link"><span class="pre">[ソース]</span></span></a><a class="headerlink" href="#XYZ_Freq.Hessian" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>ベースクラス: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Hessian calculation class.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="XYZ_Freq.Hessian.coord">
+<span class="sig-name descname"><span class="pre">coord</span></span><a class="headerlink" href="#XYZ_Freq.Hessian.coord" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>An array of atom coordinates [Angstroms].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="XYZ_Freq.Hessian.atmlist">
+<span class="sig-name descname"><span class="pre">atmlist</span></span><a class="headerlink" href="#XYZ_Freq.Hessian.atmlist" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>A list of atoms (String).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">These</span> <span class="pre">are</span> <span class="pre">created</span> <span class="pre">from</span> <span class="pre">&lt;jobname&gt;.xyz</span> <span class="pre">via</span> <span class="pre">xyzImp</span> <span class="pre">function.</span></span></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">When</span> <span class="pre">atmlist</span> <span class="pre">=</span> <span class="pre">[&quot;C&quot;,</span> <span class="pre">&quot;O&quot;],</span></span></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">coord</span> <span class="pre">=</span> <span class="pre">[C_x</span></span></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>x coordinate for C atom</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="XYZ_Freq.Hessian.strc">
+<span class="sig-name descname"><span class="pre">strc</span></span><a class="headerlink" href="#XYZ_Freq.Hessian.strc" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>A string defined with coord and atmlist.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>String</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="simple">
+<dt>Usage:</dt><dd><p>h = Hessian(coord, atmlist)
+hessian = h.hessian()</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="XYZ_Freq.Hessian.energy">
+<span class="sig-name descname"><span class="pre">energy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/XYZ_Freq.html#Hessian.energy"><span class="viewcode-link"><span class="pre">[ソース]</span></span></a><a class="headerlink" href="#XYZ_Freq.Hessian.energy" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>Calculate SCF energy [Hartree].</p>
+<dl class="field-list simple">
+<dt class="field-odd">戻り値<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the SCF energy of the molecule</p>
+</dd>
+<dt class="field-even">戻り値の型<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="XYZ_Freq.Hessian.forceCalc">
+<span class="sig-name descname"><span class="pre">forceCalc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/XYZ_Freq.html#Hessian.forceCalc"><span class="viewcode-link"><span class="pre">[ソース]</span></span></a><a class="headerlink" href="#XYZ_Freq.Hessian.forceCalc" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>Numerical derivative of Energy with nth coordinate. (dE/dx_n)</p>
+<dl class="field-list simple">
+<dt class="field-odd">パラメータ<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>n</strong> (<em>Int</em>) -- the suffix of derivative variable</p>
+</dd>
+<dt class="field-even">戻り値<span class="colon">:</span></dt>
+<dd class="field-even"><p>the derivative of molecule's energy</p>
+</dd>
+<dt class="field-odd">戻り値の型<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="XYZ_Freq.Hessian.hessian">
+<span class="sig-name descname"><span class="pre">hessian</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">matrix</span></span></span><a class="reference internal" href="_modules/XYZ_Freq.html#Hessian.hessian"><span class="viewcode-link"><span class="pre">[ソース]</span></span></a><a class="headerlink" href="#XYZ_Freq.Hessian.hessian" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>Calculate Hessian</p>
+<dl class="field-list simple">
+<dt class="field-odd">戻り値<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the Hessian of the matrix</p>
+</dd>
+<dt class="field-even">戻り値の型<span class="colon">:</span></dt>
+<dd class="field-even"><p>numpy.matrix</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="XYZ_Freq.Hessian.secDrv">
+<span class="sig-name descname"><span class="pre">secDrv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="_modules/XYZ_Freq.html#Hessian.secDrv"><span class="viewcode-link"><span class="pre">[ソース]</span></span></a><a class="headerlink" href="#XYZ_Freq.Hessian.secDrv" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>Second derivative of Energy with n,mth coordinates. (d^2 E/dx_n dx_m)</p>
+<dl class="field-list simple">
+<dt class="field-odd">パラメータ<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> (<em>Int</em>) -- the suffix of derivative variables</p></li>
+<li><p><strong>m</strong> (<em>Int</em>) -- the suffix of derivative variables</p></li>
+</ul>
+</dd>
+<dt class="field-even">戻り値<span class="colon">:</span></dt>
+<dd class="field-even"><p>the second derivative of molecule's energy</p>
+</dd>
+<dt class="field-odd">戻り値の型<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="XYZ_Freq.IR">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">XYZ_Freq.</span></span><span class="sig-name descname"><span class="pre">IR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">eig</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coord</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atmlist</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/XYZ_Freq.html#IR"><span class="viewcode-link"><span class="pre">[ソース]</span></span></a><a class="headerlink" href="#XYZ_Freq.IR" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>ベースクラス: <a class="reference internal" href="#XYZ_Freq.Hessian" title="XYZ_Freq.Hessian"><code class="xref py py-class docutils literal notranslate"><span class="pre">Hessian</span></code></a>, <a class="reference internal" href="#XYZ_Freq.Harmonic" title="XYZ_Freq.Harmonic"><code class="xref py py-class docutils literal notranslate"><span class="pre">Harmonic</span></code></a></p>
+<p>IR intensity calculation class.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="XYZ_Freq.IR.eig">
+<span class="sig-name descname"><span class="pre">eig</span></span><a class="headerlink" href="#XYZ_Freq.IR.eig" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>Eigenvalues and eigenvectors of mass-weighted Hessian,
+calculated via Harmonic.frequencies() function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="XYZ_Freq.IR.coord">
+<span class="sig-name descname"><span class="pre">coord</span></span><a class="headerlink" href="#XYZ_Freq.IR.coord" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>An array of atom coordinates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="XYZ_Freq.IR.atmlist">
+<span class="sig-name descname"><span class="pre">atmlist</span></span><a class="headerlink" href="#XYZ_Freq.IR.atmlist" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>A list of atoms (String), the same as Hessian.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="XYZ_Freq.IR.intensity">
+<span class="sig-name descname"><span class="pre">intensity</span></span><a class="headerlink" href="#XYZ_Freq.IR.intensity" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>An array of IR intensity,
+calculated via IR.xyzIntensity() or IR.normodeIntensity()</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="simple">
+<dt>Usage:</dt><dd><p>ir = IR(eig, coord, atmlist)
+intensity = ir.xyzIntensity()
+print(ir)</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">注釈</p>
+<p>Execute IR.xyzIntensity() or IR.normodeIntensity() before print(IR)!</p>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="XYZ_Freq.IR.dipoleMoment">
+<span class="sig-name descname"><span class="pre">dipoleMoment</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/XYZ_Freq.html#IR.dipoleMoment"><span class="viewcode-link"><span class="pre">[ソース]</span></span></a><a class="headerlink" href="#XYZ_Freq.IR.dipoleMoment" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>Calculate Dipole Moment</p>
+<dl class="field-list simple">
+<dt class="field-odd">戻り値<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dipolemoment [x, y, z]</p>
+</dd>
+<dt class="field-even">戻り値の型<span class="colon">:</span></dt>
+<dd class="field-even"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="XYZ_Freq.IR.normodeIntensity">
+<span class="sig-name descname"><span class="pre">normodeIntensity</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/XYZ_Freq.html#IR.normodeIntensity"><span class="viewcode-link"><span class="pre">[ソース]</span></span></a><a class="headerlink" href="#XYZ_Freq.IR.normodeIntensity" title="この定義へのパーマリンク">¶</a></dt>
+<dd><dl class="simple">
+<dt>Calculate IR intensity of each modes,</dt><dd><p>with derivative of dipole moment with normal mode coordinate.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">戻り値<span class="colon">:</span></dt>
+<dd class="field-odd"><p>an array of IR intensity of each modes.</p>
+</dd>
+<dt class="field-even">戻り値の型<span class="colon">:</span></dt>
+<dd class="field-even"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="XYZ_Freq.IR.xyzIntensity">
+<span class="sig-name descname"><span class="pre">xyzIntensity</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/XYZ_Freq.html#IR.xyzIntensity"><span class="viewcode-link"><span class="pre">[ソース]</span></span></a><a class="headerlink" href="#XYZ_Freq.IR.xyzIntensity" title="この定義へのパーマリンク">¶</a></dt>
+<dd><dl class="simple">
+<dt>Calculate IR intensity of each modes,</dt><dd><p>with unitary transformation of xyz derivative of dipole moment.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">戻り値<span class="colon">:</span></dt>
+<dd class="field-odd"><p>an array of IR intensity of each modes.</p>
+</dd>
+<dt class="field-even">戻り値の型<span class="colon">:</span></dt>
+<dd class="field-even"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="XYZ_Freq.Plot">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">XYZ_Freq.</span></span><span class="sig-name descname"><span class="pre">Plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">eig</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intensity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atmlist</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/XYZ_Freq.html#Plot"><span class="viewcode-link"><span class="pre">[ソース]</span></span></a><a class="headerlink" href="#XYZ_Freq.Plot" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>ベースクラス: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Plot and Visualization class.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="XYZ_Freq.Plot.eig">
+<span class="sig-name descname"><span class="pre">eig</span></span><a class="headerlink" href="#XYZ_Freq.Plot.eig" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>Eigenvalues and eigenvectors of mass-weighted Hessian,
+calculated via Harmonic.frequencies() function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="XYZ_Freq.Plot.job">
+<span class="sig-name descname"><span class="pre">job</span></span><a class="headerlink" href="#XYZ_Freq.Plot.job" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>the name of molecule you want to calculate.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>String</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="XYZ_Freq.Plot.intensity">
+<span class="sig-name descname"><span class="pre">intensity</span></span><a class="headerlink" href="#XYZ_Freq.Plot.intensity" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>An array of IR intensity,
+calculated via IR.xyzIntensity() or IR.normodeIntensity()</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>numpy.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="XYZ_Freq.Plot.atmlist">
+<span class="sig-name descname"><span class="pre">atmlist</span></span><a class="headerlink" href="#XYZ_Freq.Plot.atmlist" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>A list of atoms (String), the same as Hessian.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl>
+<dt>Usage:</dt><dd><p>Plot(eig, job, intensity, atmlist)
+Then IR spectrum graph</p>
+<blockquote>
+<div><p>and VESTA files for each normal mode vector
+which visualize them on the molecule are generated.</p>
+</div></blockquote>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="XYZ_Freq.Plot.irSpectrum">
+<span class="sig-name descname"><span class="pre">irSpectrum</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/XYZ_Freq.html#Plot.irSpectrum"><span class="viewcode-link"><span class="pre">[ソース]</span></span></a><a class="headerlink" href="#XYZ_Freq.Plot.irSpectrum" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>Generate a IR spectrum plot in a png file.</p>
+<p>It generates &lt;jobname&gt;_IR.png file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="XYZ_Freq.Plot.vecviz">
+<span class="sig-name descname"><span class="pre">vecviz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/XYZ_Freq.html#Plot.vecviz"><span class="viewcode-link"><span class="pre">[ソース]</span></span></a><a class="headerlink" href="#XYZ_Freq.Plot.vecviz" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>Visualize the Normal Mode Vectors on VESTA file.</p>
+<p>It generates &lt;jobname&gt;_vector_mode&lt;number&gt;.vesta file
+for each oscillation mode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">パラメータ<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>scale</strong> (<em>float</em>) -- The length scale of the vectors</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="XYZ_Freq.main">
+<span class="sig-prename descclassname"><span class="pre">XYZ_Freq.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/XYZ_Freq.html#main"><span class="viewcode-link"><span class="pre">[ソース]</span></span></a><a class="headerlink" href="#XYZ_Freq.main" title="この定義へのパーマリンク">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="XYZ_Freq.xyzInp">
+<span class="sig-prename descclassname"><span class="pre">XYZ_Freq.</span></span><span class="sig-name descname"><span class="pre">xyzInp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">job</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/XYZ_Freq.html#xyzInp"><span class="viewcode-link"><span class="pre">[ソース]</span></span></a><a class="headerlink" href="#XYZ_Freq.xyzInp" title="この定義へのパーマリンク">¶</a></dt>
+<dd><p>Import &lt;jobname&gt;.xyz file.</p>
+<p>It reads &lt;jobname&gt;.xyz file and store its information
+in coord and atmlist.</p>
+<dl class="field-list simple">
+<dt class="field-odd">パラメータ<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>job</strong> (<em>String</em>) -- jobname, the name of molecule you calculate.</p>
+</dd>
+<dt class="field-even">戻り値<span class="colon">:</span></dt>
+<dd class="field-even"><p>atmlist, A list of atoms (String).
+numpy.ndarray: coord, An array of atom coordinates [Angstroms].</p>
+</dd>
+<dt class="field-odd">戻り値の型<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="chapter2.html" class="btn btn-neutral float-left" title="振動解析プログラム" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, maria.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

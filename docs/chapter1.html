@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="ja" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sphinx メモ &mdash; Sphinx Study 1 ドキュメント</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+        <script src="_static/translations.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="索引" href="genindex.html" />
+    <link rel="search" title="検索" href="search.html" />
+    <link rel="next" title="振動解析プログラム" href="chapter2.html" />
+    <link rel="prev" title="Welcome to Maria&#39;s Sphinx documentation!" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Sphinx Study
+              <img src="_static/LOGO1.PNG" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Sphinx メモ</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#rtd">RTDスタイルの導入</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id1">ロゴの導入</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#toctree">toctree</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id2">ソースコードマニュアルの導入</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="chapter2.html">振動解析プログラム</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Sphinx Study</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Sphinx メモ</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/chapter1.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="sphinx">
+<h1>Sphinx メモ<a class="headerlink" href="#sphinx" title="この見出しへのパーマリンク">¶</a></h1>
+<section id="rtd">
+<h2>RTDスタイルの導入<a class="headerlink" href="#rtd" title="この見出しへのパーマリンク">¶</a></h2>
+<ul class="simple">
+<li><p>pip で sphinx_rtd_theme を入れる。</p></li>
+<li><p>conf.pyで以下のように編集</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">sphinx_rtd_theme</span>
+<span class="n">html_theme</span> <span class="o">=</span> <span class="s1">&#39;sphinx_rtd_theme&#39;</span>
+<span class="n">html_static_path</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;_static&#39;</span><span class="p">]</span>
+<span class="n">html_theme_path</span> <span class="o">=</span> <span class="p">[</span><span class="n">sphinx_rtd_theme</span><span class="o">.</span><span class="n">get_html_theme_path</span><span class="p">()]</span>
+</pre></div>
+</div>
+</section>
+<section id="id1">
+<h2>ロゴの導入<a class="headerlink" href="#id1" title="この見出しへのパーマリンク">¶</a></h2>
+<ul>
+<li><p>ロゴを描いてPNG形式で保存する。</p></li>
+<li><p>_static/ ディレクトリにロゴのpngファイルを入れる。今回はLOGO1.PNG</p></li>
+<li><p>conf.pyで以下を追記:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">html_logo</span> <span class="o">=</span> <span class="s1">&#39;./_static/LOGO1.PNG&#39;</span>
+</pre></div>
+</div>
+</li>
+<li><p>html_theme_options = {}の中をいじるともっと色々カスタマイズできるっぽい。</p></li>
+</ul>
+</section>
+<section id="toctree">
+<h2>toctree<a class="headerlink" href="#toctree" title="この見出しへのパーマリンク">¶</a></h2>
+<ul class="simple">
+<li><p>rst拡張子を省いて並べて書くことで、指定したページへの参照が可能。</p></li>
+<li><p>相対パスを使うこと。</p></li>
+</ul>
+</section>
+<section id="id2">
+<h2>ソースコードマニュアルの導入<a class="headerlink" href="#id2" title="この見出しへのパーマリンク">¶</a></h2>
+<ul>
+<li><p>ディレクトリ構成は、doc/とsrc/とsphinx_files/が同じディレクトリ下にある状態</p></li>
+<li><p>sphinx_fileにこれまでのindex.rstなどがある</p></li>
+<li><p>src/ の下でコマンド実行時:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sphinx</span><span class="o">-</span><span class="n">apidoc</span> <span class="o">-</span><span class="n">F</span> <span class="o">-</span><span class="n">H</span> <span class="n">ProjectName</span> <span class="o">-</span><span class="n">A</span> <span class="n">AuthorName</span> <span class="o">-</span><span class="n">V</span> <span class="n">VersionNumber</span> <span class="o">-</span><span class="n">o</span> <span class="o">../</span><span class="n">sphinx_files</span> <span class="o">.</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p>とすれば、既存のindex.rstなどは消されず、&lt;module&gt;.pyのマニュアルを呼ぶ&lt;module&gt;.rstがsphinx_files/に、&lt;module&gt;.htmlはdocs/に作られる。
+* すでにあるconf.pyに対して</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;&lt;Absolute PATH to src&gt;&#39;</span><span class="p">)</span>
+<span class="o">~~~</span>
+<span class="n">extensions</span> <span class="o">=</span> <span class="p">[</span>
+ <span class="s1">&#39;sphinx.ext.autodoc&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;sphinx.ext.viewcode&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;sphinx.ext.todo&#39;</span><span class="p">,</span>
+ <span class="s1">&#39;sphinx.ext.napoleon&#39;</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<p>と編集してやれば良い。</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to Maria&#39;s Sphinx documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="chapter2.html" class="btn btn-neutral float-right" title="振動解析プログラム" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, maria.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
